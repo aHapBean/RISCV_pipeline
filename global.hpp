@@ -59,10 +59,6 @@ enum OPflag {
 enum object_num{
     none,
     one,
-    two,
-    three,
-    four,
-    five
 };
 
 
