@@ -29,17 +29,14 @@ void Epreforwarding(u32 regd,u32 rd,u32 ld_flag){
     ID_EX.Efrd   = rd;
     ID_EX.ld_flag = ld_flag;    //每次回传都需要重新赋值 !!!
 }
-
 void Mpreforwarding(u32 regd,u32 rd){
     ID_EX.Mfregd = regd;
     ID_EX.Mfrd   = rd;
 }
-
 void Wpreforwarding(u32 regd,u32 rd){
     ID_EX.Wfrd = rd;
     ID_EX.Wfregd = regd;
 }
-
 void forwarding(){
     //STALL 后的forwarding
     if(STALL_post_D_F_W_bubble){
@@ -66,6 +63,8 @@ void forwarding(){
         STALL_post_D_F_W_bubble = 0;    //remember to do this
     }//EX一定保持在后面更新
 }
+
+
 
     /*update & discard*/
 void updateALL(){
@@ -100,14 +99,12 @@ void updateALL(){
     res_EX_MEM.obn= none;
     res_MEM_WB.obn= none;
 }
-
 void RES_IF_ID_up(u32 iniPC,u32 predPC,u32 code,object_num obn){
     res_IF_ID.obn  = obn;
     res_IF_ID.iniPC   = iniPC;
     res_IF_ID.predPC = predPC;
     res_IF_ID.code = code;
 }
-
 void RES_ID_EX_up(  object_num obn,
                 u32 rd = 0,u32 rs1 = 0,u32 rs2 = 0,
                 u32 imm = 0,u32 shamt = 0,
@@ -133,7 +130,6 @@ void RES_ID_EX_up(  object_num obn,
     res_ID_EX.iniPC = iniPC;
     res_ID_EX.predPC = predPC;
 }
-
 void RES_EX_MEM_up(object_num obn,
                 u32 ld_dest = 0,u32 ld_flag = 0,
                 u32 st_dest = 0,u32 st_flag = 0,
@@ -150,7 +146,6 @@ void RES_EX_MEM_up(object_num obn,
     res_EX_MEM.iniPC = iniPC;           
     res_EX_MEM.predPC= predPC;                
 }
-
 void RES_MEM_WB_up(object_num obn,
                 u32 esc_flag = 0,OPflag opflag = LUI,
                 u32 iniPC = 0,u32 predPC = 0,
@@ -165,11 +160,15 @@ void RES_MEM_WB_up(object_num obn,
     res_MEM_WB.regd = regd;
 }
 
+
+
     /*predict*/
 u32 predict(u32 &PC){
     PC += 4;
     return PC;
 }
+
+
 
 /*5 Stages*/
     /*Instruction Fetch*/
@@ -701,3 +700,26 @@ void WB(){
 }
 
 #endif //BUFFER_STAGES_HPP
+/*
+错误汇总:
+1.obn = one;
+
+2.buffer中obn传递漏写
+
+3.forwarding if(rd ? Mfrd ? Wfrd ? or Efrd)
+especially the rd and Efrd ! (the last fault)
+
+4.esc_flag in the EX_MEM (directly) //but in the MEM_WB ,it's normal.
+
+5.stall bubbles ,a "global" variable (the additional MEM)
+and discard-> discard_clk ! in update !
+
+
+6.forwarding特判
+
+之前的错误(单指令) 
+7.ld_flag !忘传
+
+8.reg[0]未置零
+在此代码传递中，中午没有进行reg[0]特判，需要注意用到这种不合法的值
+*/

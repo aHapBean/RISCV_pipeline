@@ -3,63 +3,31 @@
 using u32 = unsigned int;
 using u8  = unsigned char;
 
-u8 mem[500000];     //全局变量
+    /*global variables*/
+u8 mem[500000];
 u32 reg[32];
 u32 PC;
 u32 clk;
 bool eesc;
-enum OPflag {
-    LUI,
-    AUIPC,      //add uppper imm to PC
-    JAL,        //jump and link
-    JALR,       //jump and link reg
-    BEQ,        //branch equal  
 
-    BNE,        
-    BLT,
-    BGE,
-    BLTU,
-    BGEU,
-    
-    LB,
-    LH,
-    LW,
-    LBU,
-    LHU,
 
-    SB,
-    SH,
-    SW,
-    ADDI,
-    SLTI,
-
-    SLTIU,
-    XORI,
-    ORI,
-    ANDI,
-    SLLI,
-
-    SRLI,
-    SRAI,
-    ADD,
-    SUB,
-    SLL,
-
-    SLT,
-    SLTU,
-    XOR,
-    SRL,
-    SRA,
-
-    OR,
-    AND
+    /*enum*/
+enum OPflag {LUI,AUIPC,JAL,JALR,BEQ,
+            BNE,BLT,BGE,BLTU,BGEU,
+            LB,LH,LW,LBU,LHU,
+            SB,SH,SW,ADDI,SLTI,
+            SLTIU,XORI,ORI,ANDI,SLLI,
+            SRLI,SRAI,ADD,SUB,SLL,
+            SLT,SLTU,XOR,SRL,SRA,
+            OR,AND
 };
-
 enum object_num{
     none,
     one,
 };
 
+
+    /*buffer definition*/
 struct IF_ID_buffer {
     object_num obn;
     u32 code,iniPC,predPC;
@@ -70,7 +38,6 @@ struct IF_ID_buffer {
         code = t.code;
     }
 };
-
 struct ID_EX_buffer {
     object_num obn;
     u32 rd,rs1,rs2;   
@@ -95,7 +62,6 @@ struct ID_EX_buffer {
         opflag = t.opflag;
     }
 };
-
 struct EX_MEM_buffer {
     object_num obn;
     u32 esc_flag;
@@ -118,7 +84,6 @@ struct EX_MEM_buffer {
         opflag = t.opflag;
     }
 };
-
 struct MEM_WB_buffer{
     object_num obn;
     OPflag opflag;
@@ -135,6 +100,7 @@ struct MEM_WB_buffer{
 };
 
 
+    /*debug Print*/
 void printOP(OPflag flag){
 	return ;
     switch (flag) {
@@ -177,7 +143,6 @@ void printOP(OPflag flag){
         case 36:std::cout<<"AND"<<std::endl;break;
     }
 }
-
 void printREG(u32 rd){
 	return ;
     switch (rd) {
@@ -215,11 +180,9 @@ void printREG(u32 rd){
         case 31:std::cout<<"t6";break;
     }
 }
-
 void printSTORE(u32 st_dest,u32 reg2){
 	printf("st_dest: %d reg2 : %d \n",st_dest,reg2);
 }
-
 void printID_EX_Buffer(ID_EX_buffer &t){
 	return ;
     printf("imm: %d rd: %d rs1: %d rs2 %d\n",t.imm,t.rd,t.rs1,t.rs2);

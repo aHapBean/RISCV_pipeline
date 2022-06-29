@@ -1,7 +1,4 @@
-//decided by Path !
-//namely the Path is responsible for find the include lib
-//cpu.hpp
-
+//my_cpu.hpp
 #ifndef CPU_HPP
 #define CPU_HPP
 
@@ -58,6 +55,23 @@ void init(std::istream &in){
     }
     sz = ptr;
 }
+//单指令执行本质:
+/*
+while(1){
+    if(i == 0){
+        IF();
+    } else if(){
+        ID();
+    } else if(){
+        EX();
+    } else if(){
+        MEM();
+    } else if(){
+        WB();
+        if(STAGE::MEM_WB.esc_flag)break;
+    }
+}
+*/
 void DEBUGrun(){
 	while(1){
         clk++;
@@ -111,25 +125,6 @@ void pipeRUN(){
         if(eesc)break;
     }
 }
-//单指令执行本质:
-/*
-while(1){
-    if(i == 0){
-        IF();
-    } else if(){
-        ID();
-    } else if(){
-        EX();
-    } else if(){
-        MEM();
-    } else if(){
-        WB();
-        if(STAGE::MEM_WB.esc_flag)break;
-    }
-}
-*/
-
-bool empty(){return all_empty_flag == 1;}
 
 };
 #endif //CPP_HPP
