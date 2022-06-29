@@ -8,103 +8,20 @@
 using u32 = unsigned int;
 using u8  = unsigned char;
 
-
 extern u8 mem[500000];
 extern u32 reg[32];
-extern u32 PC;//不能乱声明！ 
+extern u32 PC;      //仅是声明
 extern u32 clk;
 extern bool eesc;
 u32 discard_clk;
 
 namespace STAGE{
-    u32 STALL_post_D_F_W_bubble,discard_flag;
-    object_num out_obn;
-/*
-    struct PC_IF_buffer {
-        u32 PC;
-        object_num obn;
-        PC_IF_buffer& operator=(const PC_IF_buffer &t){
-            PC = t.PC;
-            obn = t.obn;
-        }
-    }PC_IF,res_PC_IF;
-*/
-
-    struct IF_ID_buffer {
-        object_num obn;
-        u32 code,iniPC,predPC;
-        IF_ID_buffer& operator=(const IF_ID_buffer &t){
-            iniPC = t.iniPC;
-            predPC = t.predPC;
-            obn = t.obn;
-            code = t.code;
-        }
-    }IF_ID,res_IF_ID;
-
-    struct ID_EX_buffer {
-        object_num obn;
-        u32 rd,rs1,rs2;   
-        u32 iniPC,predPC;               
-        u32 regd,reg1,reg2,imm,shamt,Mfregd,Mfrd,Efregd,Efrd,Wfregd,Wfrd,ld_flag;
-        OPflag opflag;      //OPflag
-        ID_EX_buffer(){rs1 = rs2 = rd = imm = Mfregd = Mfrd = Efregd = Wfregd = Wfrd = ld_flag = Efrd = 0;}
-        ID_EX_buffer& operator=(const ID_EX_buffer &t){
-            obn = t.obn;
-            rd  = t.rd;
-            rs1 = t.rs1;
-            rs2 = t.rs2;
-
-            iniPC = t.iniPC;
-            predPC = t.predPC;
-
-            regd = t.regd;
-            reg1 = t.reg1;
-            reg2 = t.reg2;
-            imm = t.imm;
-            shamt = t.shamt;
-            opflag = t.opflag;
-        }
-    }ID_EX,res_ID_EX;
-
-    struct EX_MEM_buffer {
-        object_num obn;
-        u32 esc_flag;
-        u32 rd,rs1,rs2;  
-        u32 regd,iniPC,predPC,imm,reg2;
-        u32 ld_dest,st_dest,ld_flag,st_flag;
-        OPflag opflag;
-        EX_MEM_buffer& operator=(const EX_MEM_buffer &t){
-            obn = t.obn;
-            rd  = t.rd;
-            rs1 = t.rs1;
-            rs2 = t.rs2;
-            //esc_flag = t.esc_flag; //!!
-            regd = t.regd;
-            iniPC = t.iniPC;
-            predPC = t.predPC;
-            imm = t.imm;reg2 = t.reg2;
-            ld_dest = t.ld_dest;st_dest = t.st_dest;
-            ld_flag = t.ld_flag;st_flag = t.st_flag;
-            opflag = t.opflag;
-        }
-    }EX_MEM,res_EX_MEM;
-
-    struct MEM_WB_buffer{
-        object_num obn;
-        OPflag opflag;
-        u32 regd,rd,iniPC,predPC;
-        u32 esc_flag;
-        MEM_WB_buffer& operator=(const EX_MEM_buffer &t){
-            obn = t.obn;
-            opflag = t.opflag;
-            regd = t.regd;rd  = t.rd;
-            esc_flag = t.esc_flag;
-            iniPC = t.iniPC;
-            predPC = t.predPC;
-        }
-    }MEM_WB,res_MEM_WB;
-
-void printID_EX_Buffer(STAGE::ID_EX_buffer &t);
+    u32 STALL_post_D_F_W_bubble,discard_flag;   //flag
+    object_num out_obn;             //op object
+    IF_ID_buffer IF_ID,res_IF_ID;   //buffer
+	ID_EX_buffer ID_EX,res_ID_EX;
+	EX_MEM_buffer EX_MEM,res_EX_MEM;
+	MEM_WB_buffer MEM_WB,res_MEM_WB;
 
     /*forwarding*/
 void Epreforwarding(u32 regd,u32 rd,u32 ld_flag){
@@ -122,14 +39,11 @@ void Wpreforwarding(u32 regd,u32 rd){
     ID_EX.Wfrd = rd;
     ID_EX.Wfregd = regd;
 }
-//rd != 0;
-
-//FUCK !!!!!! here 1
 
 void forwarding(){
     //STALL 后的forwarding
-    if(STALL_post_D_F_W_bubble){            //两次forwarding值都保留了 ？？？？
-        //如果刚刚执行过stall
+    if(STALL_post_D_F_W_bubble){
+        //刚执行过stall
         //留下forwarding的数据
         if(ID_EX.Mfrd != 0 && ID_EX.rs1 == ID_EX.Mfrd)ID_EX.reg1 = ID_EX.Mfregd;
         if(ID_EX.Mfrd != 0 && ID_EX.rs2 == ID_EX.Mfrd)ID_EX.reg2 = ID_EX.Mfregd;
@@ -153,8 +67,7 @@ void forwarding(){
     }//EX一定保持在后面更新
 }
 
-
-/*执行完成后 update buffer*/
+    /*update & discard*/
 void updateALL(){
     if(discard_flag == 2 || STALL_post_D_F_W_bubble && discard_flag)printf("FUCKKKKKKKKKKKK\n\n\n");
     if(discard_flag && discard_clk == clk){
@@ -169,20 +82,17 @@ void updateALL(){
     
     if(discard_flag && discard_clk + 2 == clk){
         //res_EX_MEM.obn = none;// MEM WB
-        //理论上这两条可以去掉，中间和下面的第一条
         res_MEM_WB.obn = none;//最后一个不用管，因为MEM没跑，它没更新
         discard_flag = 0;//控制下一个周期，可以重新开始
     }
 
     if(STALL_post_D_F_W_bubble){EX_MEM.obn = none;}//MEM不操作，IF_ID，"PC_IF",ID_EX不动 ! !
     else {
-        IF_ID = res_IF_ID;//是这三个操作停滞所以没有输出
+        IF_ID = res_IF_ID;
         ID_EX = res_ID_EX;
-        EX_MEM= res_EX_MEM;//set none !一周期的停滞，不然重复操作了
+        EX_MEM= res_EX_MEM;
     }
-//我的STALL是一个标记
-    forwarding();   //forwarding处理，针对ID_EX_buffer    
-    //PC_IF = res_PC_IF;//update !
+    forwarding();
     MEM_WB= res_MEM_WB;//update ！
     
     res_IF_ID.obn = none;
@@ -191,35 +101,12 @@ void updateALL(){
     res_MEM_WB.obn= none;
 }
 
-
-u32 predict(u32 &PC){
-    PC += 4;
-    return PC;
-}
-
 void RES_IF_ID_up(u32 iniPC,u32 predPC,u32 code,object_num obn){
     res_IF_ID.obn  = obn;
     res_IF_ID.iniPC   = iniPC;
     res_IF_ID.predPC = predPC;
     res_IF_ID.code = code;
 }
-
-void IF(){
-    //in the mem the info is stored in the form of byte  |u8 !
-    object_num obn = one;
-    if(STALL_post_D_F_W_bubble){return ;}
-
-    u32 code = 0b0,iniPC = PC,predPC;
-	IF_ID.code = 0b0;
-    for(int i = 0;i < 4; ++i){
-        code |= (mem[PC + 3 - i] & 0b11111111);//机器内部其实就是二进制形式的简单赋值，16进制数在内存也以0 1 形式体现
-        if(i != 3)code <<= 8;       //     不能左移四次，因为第一次不用移！！ 
-    }//逆读
-    predPC = predict(PC);        //change the global PC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-                                    //静态预测
-    RES_IF_ID_up(iniPC,predPC,code,obn);
-}
-
 
 void RES_ID_EX_up(  object_num obn,
                 u32 rd = 0,u32 rs1 = 0,u32 rs2 = 0,
@@ -247,8 +134,62 @@ void RES_ID_EX_up(  object_num obn,
     res_ID_EX.predPC = predPC;
 }
 
+void RES_EX_MEM_up(object_num obn,
+                u32 ld_dest = 0,u32 ld_flag = 0,
+                u32 st_dest = 0,u32 st_flag = 0,
+                u32 regd = 0,u32 reg2 = 0,
+                u32 rd = 0,u32 rs1 = 0,u32 rs2 = 0,
+                u32 iniPC = 0,u32 predPC = 0,
+                OPflag opflag = LUI){
+    res_EX_MEM.obn = obn;		                //FUCK
+    res_EX_MEM.ld_dest = ld_dest;res_EX_MEM.st_flag = st_flag;              //FUCKKKKKKKKKKKKKKKKKKK
+    res_EX_MEM.ld_flag = ld_flag;res_EX_MEM.st_dest = st_dest;
+    res_EX_MEM.regd = regd;res_EX_MEM.opflag = opflag;res_EX_MEM.rd = rd;
+    res_EX_MEM.rs1 = rs1;res_EX_MEM.rs2 = rs2;//no opcode ! 
+    res_EX_MEM.reg2 = reg2;
+    res_EX_MEM.iniPC = iniPC;           
+    res_EX_MEM.predPC= predPC;                
+}
 
-    /*Instuction_Decode*/
+void RES_MEM_WB_up(object_num obn,
+                u32 esc_flag = 0,OPflag opflag = LUI,
+                u32 iniPC = 0,u32 predPC = 0,
+                u32 rd = 0,u32 regd = 0){
+    res_MEM_WB.obn = obn;
+    res_MEM_WB.esc_flag = esc_flag;     //仅仅是EX_MEM直接赋值给 真实 buffer
+    //其他buffer,比如 MEM_WB buffer 还是遵守正常流程的
+    res_MEM_WB.opflag = opflag;
+    res_MEM_WB.iniPC = iniPC;
+    res_MEM_WB.predPC= predPC;
+    res_MEM_WB.rd = rd;
+    res_MEM_WB.regd = regd;
+}
+
+    /*predict*/
+u32 predict(u32 &PC){
+    PC += 4;
+    return PC;
+}
+
+/*5 Stages*/
+    /*Instruction Fetch*/
+void IF(){
+    //in the mem the info is stored in the form of byte  |u8 !
+    object_num obn = one;
+    if(STALL_post_D_F_W_bubble){return ;}
+
+    u32 code = 0b0,iniPC = PC,predPC;
+	IF_ID.code = 0b0;
+    for(int i = 0;i < 4; ++i){
+        code |= (mem[PC + 3 - i] & 0b11111111);//机器内部其实就是二进制形式的简单赋值，16进制数在内存也以0 1 形式体现
+        if(i != 3)code <<= 8;       //     不能左移四次，因为第一次不用移！！ 
+    }//逆读
+    predPC = predict(PC);        //change the global PC !!
+                                    //静态预测
+    RES_IF_ID_up(iniPC,predPC,code,obn);
+}
+
+    /*Instruction Decode*/
 void ID(){
     object_num obn = IF_ID.obn;
 	
@@ -383,10 +324,9 @@ void ID(){
             }
             break;
     }
-    //puts("");
+    
     printOP(opflag);
     
-
     u32 rd = 0b0,rs1 = 0b0,rs2 = 0b0,imm = 0b0,flag = 0b0,shamt = 0b0;
 
     //几种解码
@@ -510,27 +450,8 @@ void ID(){
             rd >>= 7;
             break;
     }
-
     RES_ID_EX_up(obn,rd,rs1,rs2,imm,shamt,reg[rd],reg[rs1],reg[rs2],IF_ID.iniPC,IF_ID.predPC,opflag);
 }
-
-void RES_EX_MEM_up(object_num obn,
-                u32 ld_dest = 0,u32 ld_flag = 0,
-                u32 st_dest = 0,u32 st_flag = 0,
-                u32 regd = 0,u32 reg2 = 0,
-                u32 rd = 0,u32 rs1 = 0,u32 rs2 = 0,
-                u32 iniPC = 0,u32 predPC = 0,
-                OPflag opflag = LUI){
-    res_EX_MEM.obn = obn;		                //FUCK
-    res_EX_MEM.ld_dest = ld_dest;res_EX_MEM.st_flag = st_flag;              //FUCKKKKKKKKKKKKKKKKKKK
-    res_EX_MEM.ld_flag = ld_flag;res_EX_MEM.st_dest = st_dest;
-    res_EX_MEM.regd = regd;res_EX_MEM.opflag = opflag;res_EX_MEM.rd = rd;
-    res_EX_MEM.rs1 = rs1;res_EX_MEM.rs2 = rs2;//no opcode ! 
-    res_EX_MEM.reg2 = reg2;
-    res_EX_MEM.iniPC = iniPC;           
-    res_EX_MEM.predPC= predPC;                
-}
-
 
     /*Execute*/
 void EX(){
@@ -671,24 +592,6 @@ void EX(){
     RES_EX_MEM_up(obn,ld_dest,ld_flag,st_dest,st_flag,regd,reg2,rd,rs1,rs2,iniPC,predPC,opflag);
 }
 
-void RES_MEM_WB_up(object_num obn,
-                u32 esc_flag = 0,OPflag opflag = LUI,
-                u32 iniPC = 0,u32 predPC = 0,
-                u32 rd = 0,u32 regd = 0){
-    res_MEM_WB.obn = obn;
-    res_MEM_WB.esc_flag = esc_flag;     //仅仅是EX_MEM直接赋值给 真实 buffer
-    //其他buffer,比如 MEM_WB buffer 还是遵守正常流程的
-    res_MEM_WB.opflag = opflag;
-    res_MEM_WB.iniPC = iniPC;
-    res_MEM_WB.predPC= predPC;
-    res_MEM_WB.rd = rd;
-    res_MEM_WB.regd = regd;
-}
-
-void printSTORE(u32 st_dest,u32 reg2){
-	printf("st_dest: %d reg2 : %d \n",st_dest,reg2);
-}
-
    /*Memrory access*/
 void MEM(){
     object_num obn = EX_MEM.obn;
@@ -700,7 +603,7 @@ void MEM(){
         ld_flag = EX_MEM.ld_flag,
         st_dest = EX_MEM.st_dest,
         st_flag = EX_MEM.st_flag,
-        regd = EX_MEM.regd,//缓冲区里面regd可能有数据也可能没有数据
+        regd = EX_MEM.regd,
         rd = EX_MEM.rd,
         reg2 = EX_MEM.reg2,
         iniPC = EX_MEM.iniPC,
@@ -764,9 +667,7 @@ void MEM(){
                 break;
         }
     }
-    
     Mpreforwarding(regd,rd);
-
     RES_MEM_WB_up(obn,EX_MEM.esc_flag,opflag,EX_MEM.iniPC,EX_MEM.predPC,rd,regd);
 }
 
@@ -796,23 +697,6 @@ void WB(){
     }
     reg[0] = 0; //       big fault!
 }
-
-void printID_EX_Buffer(STAGE::ID_EX_buffer &t){
-	return ;
-    printf("imm: %d rd: %d rs1: %d rs2 %d\n",t.imm,t.rd,t.rs1,t.rs2);
-    printf("寄存器编号 rd:");
-    printREG(t.rd);
-    printf(" ");
-    printf("rs1: ");
-    printREG(t.rs1);
-    printf(" ");
-    printf("rs2 ");
-    printREG(t.rs2);
-    printf("\n reg : ra :%d ",reg[1]);
-	puts(" \n");
-    char tp[32];
-}
-
 
 }
 

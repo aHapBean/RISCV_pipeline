@@ -8,7 +8,6 @@ u32 reg[32];
 u32 PC;
 u32 clk;
 bool eesc;
-
 enum OPflag {
     LUI,
     AUIPC,      //add uppper imm to PC
@@ -59,6 +58,80 @@ enum OPflag {
 enum object_num{
     none,
     one,
+};
+
+struct IF_ID_buffer {
+    object_num obn;
+    u32 code,iniPC,predPC;
+    IF_ID_buffer& operator=(const IF_ID_buffer &t){
+        iniPC = t.iniPC;
+        predPC = t.predPC;
+        obn = t.obn;
+        code = t.code;
+    }
+};
+
+struct ID_EX_buffer {
+    object_num obn;
+    u32 rd,rs1,rs2;   
+    u32 iniPC,predPC;               
+    u32 regd,reg1,reg2,imm,shamt,Mfregd,Mfrd,Efregd,Efrd,Wfregd,Wfrd,ld_flag;
+    OPflag opflag;      //OPflag
+    ID_EX_buffer(){rs1 = rs2 = rd = imm = Mfregd = Mfrd = Efregd = Wfregd = Wfrd = ld_flag = Efrd = 0;}
+    ID_EX_buffer& operator=(const ID_EX_buffer &t){
+        obn = t.obn;
+        rd  = t.rd;
+        rs1 = t.rs1;
+        rs2 = t.rs2;
+
+        iniPC = t.iniPC;
+        predPC = t.predPC;
+
+        regd = t.regd;
+        reg1 = t.reg1;
+        reg2 = t.reg2;
+        imm = t.imm;
+        shamt = t.shamt;
+        opflag = t.opflag;
+    }
+};
+
+struct EX_MEM_buffer {
+    object_num obn;
+    u32 esc_flag;
+    u32 rd,rs1,rs2;  
+    u32 regd,iniPC,predPC,imm,reg2;
+    u32 ld_dest,st_dest,ld_flag,st_flag;
+    OPflag opflag;
+    EX_MEM_buffer& operator=(const EX_MEM_buffer &t){
+        obn = t.obn;
+        rd  = t.rd;
+        rs1 = t.rs1;
+        rs2 = t.rs2;
+        //esc_flag = t.esc_flag; //!!
+        regd = t.regd;
+        iniPC = t.iniPC;
+        predPC = t.predPC;
+        imm = t.imm;reg2 = t.reg2;
+        ld_dest = t.ld_dest;st_dest = t.st_dest;
+        ld_flag = t.ld_flag;st_flag = t.st_flag;
+        opflag = t.opflag;
+    }
+};
+
+struct MEM_WB_buffer{
+    object_num obn;
+    OPflag opflag;
+    u32 regd,rd,iniPC,predPC;
+    u32 esc_flag;
+    MEM_WB_buffer& operator=(const EX_MEM_buffer &t){
+        obn = t.obn;
+        opflag = t.opflag;
+        regd = t.regd;rd  = t.rd;
+        esc_flag = t.esc_flag;
+        iniPC = t.iniPC;
+        predPC = t.predPC;
+    }
 };
 
 
@@ -143,5 +216,24 @@ void printREG(u32 rd){
     }
 }
 
+void printSTORE(u32 st_dest,u32 reg2){
+	printf("st_dest: %d reg2 : %d \n",st_dest,reg2);
+}
+
+void printID_EX_Buffer(ID_EX_buffer &t){
+	return ;
+    printf("imm: %d rd: %d rs1: %d rs2 %d\n",t.imm,t.rd,t.rs1,t.rs2);
+    printf("寄存器编号 rd:");
+    printREG(t.rd);
+    printf(" ");
+    printf("rs1: ");
+    printREG(t.rs1);
+    printf(" ");
+    printf("rs2 ");
+    printREG(t.rs2);
+    printf("\n reg : ra :%d ",reg[1]);
+	puts(" \n");
+    char tp[32];
+}
 
 #endif

@@ -16,6 +16,9 @@ extern u8 mem[500000];     //全局变量
 extern u32 reg[32];
 extern u32 PC;
 extern u32 clk;
+
+u32 all_empty_flag;
+
 //int 和进制扯不上关系
 class cpu{
 private:
@@ -31,6 +34,7 @@ cpu(){
     PC = 0;
     sz = 0;
     clk = 0;
+    all_empty_flag = 1;
 }
 
 ~cpu(){}
@@ -46,7 +50,7 @@ void init(std::istream &in){
             ptr = strtoul(s.substr(1,8).c_str(),&tmp,16);
         } else {
         	char *tmp;
-            mem[ptr] = strtoul(s.c_str(),&tmp,16);
+            mem[ptr] = strtoul(s.c_str(),&tmp,16);//自然分界读写可以
             //printf("[%s,%d] \n", s.c_str(), mem[ptr]);
 			ptr++;
         }
@@ -54,7 +58,6 @@ void init(std::istream &in){
     }
     sz = ptr;
 }
-
 void DEBUGrun(){
 	while(1){
         clk++;
@@ -125,5 +128,8 @@ while(1){
     }
 }
 */
+
+bool empty(){return all_empty_flag == 1;}
+
 };
 #endif //CPP_HPP
