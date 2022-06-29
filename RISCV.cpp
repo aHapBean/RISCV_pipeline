@@ -15,7 +15,7 @@ int main(){
    
     cpu *RISCV = new cpu;
     init(RISCV);
-    RISCV->DEBUGrun();
+    RISCV->pipeRUN();
     delete RISCV;
     return 0;
 }
