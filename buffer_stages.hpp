@@ -7,7 +7,7 @@
 
 using u32 = unsigned int;
 using u8  = unsigned char;
-
+//u32 times = 0;
 extern u8 mem[500000];
 extern u32 reg[32];
 extern u32 PC;      //仅是声明
@@ -582,6 +582,7 @@ void EX(){
         //ID_EX.obn = none;
         ++discard_flag;
         discard_clk = clk;
+        //++times;
         //停掉正下方两个，重新来
         //PC = iniPC;//真实操作时需要的正确值
         //此时乱序执行可能还没IF那一个 !!!!!!!! 
@@ -689,6 +690,7 @@ void WB(){
         default:
             if (esc_flag) {
                 eesc = true;
+                //printf("%lf\n",(times / clk));
                 printf("%d\n",(regd & 255u));
                 return ;
             }
@@ -698,7 +700,6 @@ void WB(){
 }
 
 }
-
 #endif //BUFFER_STAGES_HPP
 /*
 错误汇总:

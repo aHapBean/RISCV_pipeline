@@ -115,10 +115,10 @@ void pipeRUN(){
 	eesc = false;
     while(1){
         clk++;
+        STAGE::ID();
         STAGE::MEM();
         STAGE::WB();
         //MEM/WB
-        STAGE::ID();
         STAGE::EX();        
         STAGE::IF();
         STAGE::updateALL();
