@@ -2,6 +2,7 @@
 #define BUFFEr_StAGES_HPP
 #include  <bits/stdc++.h>
 #include "global.hpp"
+#include "predictor.hpp"
 
 #define funct3B 0b00000000000000000111000000000000   //define funct 3
 
@@ -14,7 +15,7 @@ extern u32 PC;      //仅是声明
 extern u32 clk;
 extern bool eesc;
 u32 discard_clk;
-
+class predictor pred;
 namespace STAGE{
     u32 STALL_post_D_F_W_bubble,discard_flag;   //flag
     object_num out_obn;             //op object
@@ -63,7 +64,6 @@ void forwarding(){
         STALL_post_D_F_W_bubble = 0;    //remember to do this
     }//EX一定保持在后面更新
 }
-
 
 
     /*update & discard*/
@@ -183,7 +183,8 @@ void IF(){
         code |= (mem[PC + 3 - i] & 0b11111111);//机器内部其实就是二进制形式的简单赋值，16进制数在内存也以0 1 形式体现
         if(i != 3)code <<= 8;       //     不能左移四次，因为第一次不用移！！ 
     }//逆读
-    predPC = predict(PC);        //change the global PC !!
+    predPC = pred.predict(code,PC);        //change the global PC !!
+    PC = predPC;                            //fork
                                     //静态预测
     RES_IF_ID_up(iniPC,predPC,code,obn);
 }
@@ -452,6 +453,15 @@ void ID(){
     RES_ID_EX_up(obn,rd,rs1,rs2,imm,shamt,reg[rd],reg[rs1],reg[rs2],IF_ID.iniPC,IF_ID.predPC,opflag);
 }
 
+//fork
+bool isBranch(OPflag opflag){
+    switch (opflag) {
+        case BEQ:case BNE:case BLT:case BGE:case BLTU:case BGEU:
+        return true;
+        return false;
+    }
+}
+
     /*Execute*/
 void EX(){
     object_num obn = ID_EX.obn;
@@ -468,7 +478,9 @@ void EX(){
         reg1 = ID_EX.reg1,
         reg2 = ID_EX.reg2,
         iniPC = ID_EX.iniPC,
-        predPC = ID_EX.predPC;
+        predPC = ID_EX.predPC,
+        iniiPC = ID_EX.iniPC;
+    bool BranchTaken = false;   //fork
 
     u32 ld_dest = 0b0,st_dest = 0b0,ld_flag = 0,st_flag = 0;
     EX_MEM.esc_flag = 0;
@@ -488,17 +500,17 @@ void EX(){
             regd = iniPC + 4;iniPC = reg1 + imm;
 			break;            
         case BEQ:
-            if((reg1) == (reg2))ok = true,iniPC = iniPC + imm;break;    
+            if((reg1) == (reg2))ok = true,iniPC = iniPC + imm,BranchTaken = true;break;    
         case BNE:
-            if((reg1) != (reg2))ok = true,iniPC = iniPC + imm;break;    
+            if((reg1) != (reg2))ok = true,iniPC = iniPC + imm,BranchTaken = true;break;    
         case BLT:
-            if((int)reg1 < (int)reg2)ok = true,iniPC = iniPC + imm;break;       
+            if((int)reg1 < (int)reg2)ok = true,iniPC = iniPC + imm,BranchTaken = true;break;       
         case BGE:
-            if((int)reg1 >= (int)reg2)ok = true,iniPC = iniPC + imm;break;      
+            if((int)reg1 >= (int)reg2)ok = true,iniPC = iniPC + imm,BranchTaken = true;break;      
         case BLTU:
-            if(reg1 < reg2)ok = true,iniPC = iniPC + imm;break;         
+            if(reg1 < reg2)ok = true,iniPC = iniPC + imm,BranchTaken = true;break;         
         case BGEU:
-            if(reg1 >= reg2)ok = true,iniPC = iniPC + imm;break;
+            if(reg1 >= reg2)ok = true,iniPC = iniPC + imm,BranchTaken = true;break;
 
         case LB:case LH:case LW:case LBU:case LHU:
             ld_dest = 0b0;ld_dest += (u32)(imm);ld_dest += reg1; 
@@ -587,6 +599,13 @@ void EX(){
         //PC = iniPC;//真实操作时需要的正确值
         //此时乱序执行可能还没IF那一个 !!!!!!!! 
     }
+    //fork
+    //如果是分支指令 进入更新
+    bool isSuc = (iniPC == predPC) ? true : false;
+    if(isBranch(opflag)){
+        pred.update(BranchTaken,isSuc,iniiPC,iniPC);
+    }
+
 	printID_EX_Buffer(res_ID_EX);
     Epreforwarding(regd,rd,ld_flag); 
     RES_EX_MEM_up(obn,ld_dest,ld_flag,st_dest,st_flag,regd,reg2,rd,rs1,rs2,iniPC,predPC,opflag);
