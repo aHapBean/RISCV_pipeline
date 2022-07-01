@@ -39,10 +39,11 @@
 |expr|0.819820|suc : 91|cnt 111|
 |gcd|0.633333|suc : 76|cnt 120|
 |hanoi|0.990491|suc : 17291|cnt 17457|
-|lvalue2|0.850978|suc : 57755|cnt 67869|
+|lvalue2|0.666667|suc : 4|cnt 6|
+|magic||0.850978|suc : 57755|cnt 67869|
 |manyarguments|0.800000|suc : 8|cnt 10|
 |multiarray|0.549383|suc : 89|cnt 162|
-|naive|\|0|0|
+|naive|nope|suc : 0|cnt 0|
 |pi|0.844478|suc : 33742289|cnt 39956380|
 |qsort|0.967642|suc : 193572|cnt 200045|
 |queens|0.810571|suc : 62508|cnt 77116|
